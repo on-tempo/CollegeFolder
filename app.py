@@ -11,6 +11,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 
+# Create database tables
+with app.app_context():
+    db.create_all()
+
 # Helper function to get exam reminders
 def get_exam_reminders(user_id):
     """Get list of exams happening in the next 3 days"""
