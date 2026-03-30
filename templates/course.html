@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ course.name }} - College Folder</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 College Folder</h1>
+            <p>Organize your academic life</p>
+        </div>
+        
+        <div class="content">
+            {% if reminders %}
+            <div class="exam-reminder">
+                {% for reminder in reminders %}
+                <div class="reminder-message">
+                    {% if reminder.days_until == 1 %}
+                    🎓 Good luck on your {{ reminder.course }} {{ reminder.exam_type }} tomorrow!
+                    {% elif reminder.days_until == 2 %}
+                    📚 Your {{ reminder.course }} {{ reminder.exam_type }} is in 2 days!
+                    {% elif reminder.days_until == 3 %}
+                    📖 Your {{ reminder.course }} {{ reminder.exam_type }} is in 3 days!
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            <div class="todo-container">
+                <a href="/dashboard" class="back-btn">← Back to Courses</a>
+                
+                <h2>{{ course.name }}</h2>
+                <div style="color: #666; margin-bottom: 20px;">
+                    {% if course.midterm_date %}
+                    📝 Midterm: {{ course.midterm_date.strftime('%m/%d/%Y') }}
+                    {% endif %}
+                    {% if course.final_date %}
+                    📝 Final: {{ course.final_date.strftime('%m/%d/%Y') }}
+                    {% endif %}
+                </div>
+                
+                <div class="todo-input-group">
+                    <input type="text" id="todoInput" placeholder="Add a new task...">
+                    <button class="btn" onclick="addTodo()">Add Task</button>
+                </div>
+                
+                <ul class="todo-list" id="todoList"></ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const courseId = {{ course.id }};
+
+        async function loadTodos() {
+            const response = await fetch(`/api/todos/${courseId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                renderTodos(data.todos);
+            }
+        }
+
+        function renderTodos(todos) {
+            const list = document.getElementById('todoList');
+            list.innerHTML = '';
+            
+            todos.forEach(todo => {
+                const li = document.createElement('li');
+                li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+                li.innerHTML = `
+                    <input type="checkbox" ${todo.completed ? 'checked' : ''} 
+                           onchange="toggleTodo(${todo.id})">
+                    <span>${todo.task}</span>
+                    <button class="delete-btn" onclick="deleteTodo(${todo.id})">Delete</button>
+                `;
+                list.appendChild(li);
+            });
+        }
+
+        async function addTodo() {
+            const input = document.getElementById('todoInput');
+            const task = input.value.trim();
+            
+            if (!task) return;
+            
+            const response = await fetch(`/api/todos/${courseId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({task})
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                input.value = '';
+                loadTodos();
+            }
+        }
+
+        async function toggleTodo(todoId) {
+            await fetch(`/api/todos/${todoId}/toggle`, {
+                method: 'PUT'
+            });
+            loadTodos();
+        }
+
+        async function deleteTodo(todoId) {
+            await fetch(`/api/todos/${todoId}`, {
+                method: 'DELETE'
+            });
+            loadTodos();
+        }
+
+        // Load todos on page load
+        loadTodos();
+
+        // Enter key support
+        document.getElementById('todoInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addTodo();
+        });
+    </script>
+</body>
+</html>

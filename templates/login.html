@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>College Folder - Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📚 College Folder</h1>
+            <p>Organize your academic life</p>
+        </div>
+        
+        <div class="content">
+            <!-- Login Page -->
+            <div id="loginPage" class="auth-form">
+                <h2>Welcome Back</h2>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="your.email@college.edu">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password">
+                </div>
+                <button class="btn" onclick="login()">Log In</button>
+                <button class="btn btn-secondary" onclick="showSetup()">New User? Set Up Account</button>
+                <div id="loginError" class="error-message"></div>
+            </div>
+
+            <!-- Setup Page -->
+            <div id="setupPage" class="auth-form hidden">
+                <h2>Set Up Your Account</h2>
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="setupEmail" placeholder="your.email@college.edu">
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="setupPassword" placeholder="Create a password">
+                </div>
+                <div class="form-group">
+                    <label>Year</label>
+                    <select id="year">
+                        <option value="Freshman">Freshman</option>
+                        <option value="Sophomore">Sophomore</option>
+                        <option value="Junior">Junior</option>
+                        <option value="Senior">Senior</option>
+                        <option value="Graduate">Graduate</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Semester</label>
+                    <select id="semester">
+                        <option value="Fall">Fall</option>
+                        <option value="Spring">Spring</option>
+                        <option value="Summer">Summer</option>
+                    </select>
+                </div>
+                
+                <h3 style="margin-top: 30px; margin-bottom: 15px;">Add Your Courses</h3>
+                <div id="coursesList" class="course-list"></div>
+                <button class="btn btn-secondary" onclick="addCourseInput()">+ Add Course</button>
+                
+                <button class="btn" style="margin-top: 20px;" onclick="completeSetup()">Create Account</button>
+                <button class="btn btn-secondary" onclick="showLogin()">Back to Login</button>
+                <div id="setupError" class="error-message"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showLogin() {
+            document.getElementById('loginPage').classList.remove('hidden');
+            document.getElementById('setupPage').classList.add('hidden');
+        }
+
+        function showSetup() {
+            document.getElementById('loginPage').classList.add('hidden');
+            document.getElementById('setupPage').classList.remove('hidden');
+            addCourseInput();
+        }
+
+        async function login() {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            if (!email || !password) {
+                errorDiv.textContent = 'Please enter both email and password';
+                return;
+            }
+
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email, password})
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    errorDiv.textContent = data.message;
+                }
+            } catch (error) {
+                errorDiv.textContent = 'An error occurred. Please try again.';
+            }
+        }
+
+        function addCourseInput() {
+            const coursesList = document.getElementById('coursesList');
+            const div = document.createElement('div');
+            div.className = 'course-input-group';
+            div.innerHTML = `
+                <input type="text" placeholder="Course Name" class="courseName">
+                <input type="date" placeholder="Midterm Date" class="midtermDate">
+                <input type="date" placeholder="Final Date" class="finalDate">
+                <button class="remove-course-btn" onclick="this.parentElement.remove()">Remove</button>
+            `;
+            coursesList.appendChild(div);
+        }
+
+        async function completeSetup() {
+            const email = document.getElementById('setupEmail').value;
+            const password = document.getElementById('setupPassword').value;
+            const year = document.getElementById('year').value;
+            const semester = document.getElementById('semester').value;
+            const errorDiv = document.getElementById('setupError');
+
+            if (!email || !password) {
+                errorDiv.textContent = 'Please enter email and password';
+                return;
+            }
+
+            const courseInputs = document.querySelectorAll('.course-input-group');
+            const courses = [];
+            
+            courseInputs.forEach(input => {
+                const name = input.querySelector('.courseName').value;
+                const midterm = input.querySelector('.midtermDate').value;
+                const final = input.querySelector('.finalDate').value;
+                
+                if (name) {
+                    courses.push({name, midterm, final});
+                }
+            });
+
+            if (courses.length === 0) {
+                errorDiv.textContent = 'Please add at least one course';
+                return;
+            }
+
+            try {
+                const response = await fetch('/signup', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({email, password, year, semester, courses})
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    window.location.href = '/dashboard';
+                } else {
+                    errorDiv.textContent = data.message;
+                }
+            } catch (error) {
+                errorDiv.textContent = 'An error occurred. Please try again.';
+            }
+        }
+
+        // Enter key support
+        document.getElementById('loginPassword')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') login();
+        });
+    </script>
+</body>
+</html>
