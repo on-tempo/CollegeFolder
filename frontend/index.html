@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CollegeFolder</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Warning banner for upcoming exams (D-3) -->
+    <div id="exam-warning" class="exam-warning hidden"></div>
+
+    <!-- Auth section (login/register) -->
+    <div id="auth-section">
+        <h1>CollegeFolder</h1>
+
+        <div id="login-form">
+            <h2>Login</h2>
+            <input type="email" id="login-email" placeholder="Email">
+            <input type="password" id="login-password" placeholder="Password">
+            <button onclick="login()">Login</button>
+            <p>Don't have an account? <span onclick="showRegister()">Register</span></p>
+        </div>
+
+        <div id="register-form" class="hidden">
+            <h2>Register</h2>
+            <input type="email" id="register-email" placeholder="Email">
+            <input type="password" id="register-password" placeholder="Password">
+            <button onclick="register()">Register</button>
+            <p>Already have an account? <span onclick="showLogin()">Login</span></p>
+        </div>
+    </div>
+
+    <!-- Main section (shown after login) -->
+    <div id="main-section" class="hidden">
+        <div id="header">
+            <h1>CollegeFolder</h1>
+            <button onclick="logout()">Logout</button>
+        </div>
+
+        <!-- Semester section -->
+        <div id="semester-section">
+            <h2>Semesters</h2>
+            <input type="text" id="semester-name" placeholder="e.g. 2026 Spring">
+            <button onclick="createSemester()">Add Semester</button>
+            <div id="semester-list"></div>
+        </div>
+
+        <!-- Course section -->
+        <div id="course-section" class="hidden">
+            <h2 id="course-section-title"></h2>
+            <input type="text" id="course-name" placeholder="e.g. CS 170">
+            <button onclick="createCourse()">Add Course</button>
+            <button onclick="backToSemesters()">← Back</button>
+            <div id="course-list"></div>
+        </div>
+
+        <!-- Todo + Exam section -->
+        <div id="todo-section" class="hidden">
+            <h2 id="todo-section-title"></h2>
+            <button onclick="backToCourses()">← Back</button>
+
+            <div id="todo-container">
+                <h3>To Do</h3>
+                <input type="text" id="todo-content" placeholder="Add a task...">
+                <button onclick="createTodo()">Add</button>
+                <div id="todo-list"></div>
+            </div>
+
+            <div id="exam-container">
+                <h3>Exams</h3>
+                <input type="text" id="exam-name" placeholder="e.g. Midterm">
+                <input type="date" id="exam-date">
+                <button onclick="createExam()">Add Exam</button>
+                <div id="exam-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
