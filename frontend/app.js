@@ -9,19 +9,23 @@ async function login() {
     const email = document.getElementById("login-email").value;
     const password = document.getElementById("login-password").value;
 
-    const res = await fetch(`${API}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-    });
+    try {
+        const res = await fetch(`${API}/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
 
-    if (res.ok) {
-        const data = await res.json();
-        token = data.access_token;
-        localStorage.setItem("token", token);
-        showMainSection();
-    } else {
-        alert("Invalid email or password");
+        if (res.ok) {
+            const data = await res.json();
+            token = data.access_token;
+            localStorage.setItem("token", token);
+            showMainSection();
+        } else {
+            alert("Invalid email or password");
+        }
+    } catch (err) {
+        alert("Could not connect to server. Please try again in a moment.");
     }
 }
 
@@ -29,17 +33,21 @@ async function register() {
     const email = document.getElementById("register-email").value;
     const password = document.getElementById("register-password").value;
 
-    const res = await fetch(`${API}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password })
-    });
+    try {
+        const res = await fetch(`${API}/auth/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email, password })
+        });
 
-    if (res.ok) {
-        alert("Registered! Please login.");
-        showLogin();
-    } else {
-        alert("Email already registered");
+        if (res.ok) {
+            alert("Registered! Please login.");
+            showLogin();
+        } else {
+            alert("Email already registered");
+        }
+    } catch (err) {
+        alert("Could not connect to server. Please try again in a moment.");
     }
 }
 
