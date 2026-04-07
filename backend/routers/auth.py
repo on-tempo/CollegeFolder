@@ -1,7 +1,7 @@
+import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
-from passlib.context import CryptContext
 from jose import jwt, JWTError
 from datetime import datetime, timedelta
 from database import get_db
@@ -9,9 +9,6 @@ from models import User
 from schemas import UserCreate, UserLogin, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
-
-#Password hashing setup
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 #JWT settings
 SECRET_KEY = "collegefolderkey123"
@@ -22,10 +19,10 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 60
 security = HTTPBearer()
 
 def hash_password(password: str):
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 def verify_password(plain: str, hashed: str):
-    return pwd_context.verify(plain, hashed)
+    return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
 
 def create_access_token(user_id: int):
     #Set token expiration time
