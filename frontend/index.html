@@ -1,83 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CollegeFolder</title>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CollegeFolder — Plan your semester</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,500;9..144,600&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="style.css" />
 </head>
 <body>
+<a class="skip-link" href="#main">Skip to main content</a>
 
-    <!-- Warning banner for upcoming exams (D-3) -->
-    <div id="exam-warning" class="exam-warning hidden"></div>
+<!-- Boot splash shown until app.js renders something -->
+<div id="boot">
+  <div class="boot-spinner" aria-hidden="true"></div>
+  <p>Loading…</p>
+</div>
 
-    <!-- Auth section (login/register) -->
-    <div id="auth-section">
-        <h1>CollegeFolder</h1>
+<!-- App mounts everything inside these roots -->
+<div id="auth-root"  class="hidden" aria-live="polite"></div>
+<div id="app-root"   class="hidden" aria-live="polite"></div>
+<div id="drawer-root"></div>
+<div id="modal-root"></div>
+<div id="toast-root" aria-live="polite"></div>
 
-        <div id="login-form">
-            <h2>Login</h2>
-            <input type="email" id="login-email" placeholder="Email">
-            <input type="password" id="login-password" placeholder="Password">
-            <button onclick="login()">Login</button>
-            <p>Don't have an account? <span onclick="showRegister()">Register</span></p>
-        </div>
-
-        <div id="register-form" class="hidden">
-            <h2>Register</h2>
-            <input type="email" id="register-email" placeholder="Email">
-            <input type="password" id="register-password" placeholder="Password">
-            <button onclick="register()">Register</button>
-            <p>Already have an account? <span onclick="showLogin()">Login</span></p>
-        </div>
-    </div>
-
-    <!-- Main section (shown after login) -->
-    <div id="main-section" class="hidden">
-        <div id="header">
-            <h1>CollegeFolder</h1>
-            <button onclick="logout()">Logout</button>
-        </div>
-
-        <!-- Semester section -->
-        <div id="semester-section">
-            <h2>Semesters</h2>
-            <input type="text" id="semester-name" placeholder="e.g. 2026 Spring">
-            <button onclick="createSemester()">Add Semester</button>
-            <div id="semester-list"></div>
-        </div>
-
-        <!-- Course section -->
-        <div id="course-section" class="hidden">
-            <h2 id="course-section-title"></h2>
-            <input type="text" id="course-name" placeholder="e.g. CS 170">
-            <button onclick="createCourse()">Add Course</button>
-            <button onclick="backToSemesters()">← Back</button>
-            <div id="course-list"></div>
-        </div>
-
-        <!-- Todo + Exam section -->
-        <div id="todo-section" class="hidden">
-            <h2 id="todo-section-title"></h2>
-            <button onclick="backToCourses()">← Back</button>
-
-            <div id="todo-container">
-                <h3>To Do</h3>
-                <input type="text" id="todo-content" placeholder="Add a task...">
-                <button onclick="createTodo()">Add</button>
-                <div id="todo-list"></div>
-            </div>
-
-            <div id="exam-container">
-                <h3>Exams</h3>
-                <input type="text" id="exam-name" placeholder="e.g. Midterm">
-                <input type="date" id="exam-date">
-                <button onclick="createExam()">Add Exam</button>
-                <div id="exam-list"></div>
-            </div>
-        </div>
-    </div>
-
-    <script src="app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
