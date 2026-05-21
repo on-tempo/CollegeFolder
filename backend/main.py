@@ -15,7 +15,7 @@ app.add_middleware(
     allow_origins=[
         "http://localhost:3000",
         "http://127.0.0.1:5500",
-        "https://collegefolder.netlify.app"
+        "https://collegefolder.netlify.app",
         "https://collegefolder-frontend.onrender.com"
     ],
     allow_credentials=True,
