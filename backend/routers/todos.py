@@ -24,7 +24,7 @@ def create_todo(course_id: int, todo: TodoCreate, db: Session = Depends(get_db),
     if not course:
         raise HTTPException(status_code=404, detail="Course not found")
 
-    new_todo = Todo(content=todo.content, course_id=course_id)
+    new_todo = Todo(content=todo.content, course_id=course_id, due_date=todo.due_date)
     db.add(new_todo)
     db.commit()
     db.refresh(new_todo)

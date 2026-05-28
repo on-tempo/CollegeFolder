@@ -37,6 +37,7 @@ class Todo(Base):
     course_id = Column(Integer, ForeignKey("courses.id"), nullable=False)
     content = Column(String, nullable=False)
     is_done = Column(Boolean, default=False)
+    due_date = Column(Date, nullable=True)   # added
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
 # Exam table

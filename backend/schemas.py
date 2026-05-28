@@ -45,20 +45,25 @@ class CourseResponse(BaseModel):
 # Todo schemas
 class TodoCreate(BaseModel):
     content: str
+    due_date: date | None = None   # added
 
 class TodoUpdate(BaseModel):
     is_done: bool
+    due_date: date | None = None   # added
+
 
 class TodoResponse(BaseModel):
     id: int
     course_id: int
     content: str
     is_done: bool
+    due_date: date | None = None   # added
+    created_at: datetime
 
     class Config:
         from_attributes = True
 
-from datetime import date
+from datetime import date, datetime
 
 # Exam schemas
 class ExamCreate(BaseModel):
