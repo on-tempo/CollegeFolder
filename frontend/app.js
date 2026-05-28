@@ -399,6 +399,19 @@ function renderHeader() {
     S.sidebarOpen = !S.sidebarOpen;
     $("#sidebar").classList.toggle("open", S.sidebarOpen);
   });
+
+  // Close sidebar when clicking outside of it (registered only once)
+  if (!window._sidebarOutsideListener) {
+    window._sidebarOutsideListener = true;
+    document.addEventListener("click", (e) => {
+      if (S.sidebarOpen
+          && !e.target.closest("#sidebar")
+          && !e.target.closest("#btn-sidebar")) {
+        S.sidebarOpen = false;
+        $("#sidebar")?.classList.remove("open");
+      }
+    });
+  }
   $("#search").value = S.query;
   $("#search").addEventListener("input", e => {
     S.query = e.target.value;
