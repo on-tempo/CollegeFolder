@@ -161,8 +161,11 @@ const api = {
   },
   todos: {
     list:   (cid)               => apiFetch(`/courses/${cid}/todos`),
-    create: (cid, content)      => apiFetch(`/courses/${cid}/todos`, { method: "POST", body: JSON.stringify({ content }) }),
-    update: (cid, tid, isDone)  => apiFetch(`/courses/${cid}/todos/${tid}`, { method: "PATCH", body: JSON.stringify({ is_done: isDone }) }),
+    create: (cid, content, due_date = null) => apiFetch(`/courses/${cid}/todos`, {
+      method: "POST",
+      body: JSON.stringify({ content, due_date })
+    }),
+    update: (cid, tid, isDone, due_date = null)  => apiFetch(`/courses/${cid}/todos/${tid}`, { method: "PATCH", body: JSON.stringify({ is_done: isDone, due_date }) }),
     remove: (cid, tid)          => apiFetch(`/courses/${cid}/todos/${tid}`, { method: "DELETE" }),
   },
   exams: {
@@ -788,9 +791,16 @@ function renderMain() {
         <button data-view="agenda" aria-pressed="${S.view === "agenda"}">${SVG.list} Agenda</button>
       </div>
     </div>
-    ${S.view === "month"  ? renderMonth(filteredExams)
-    : S.view === "week"   ? renderWeek(filteredExams)
-    :                       renderAgenda(filteredExams)}`;
+    ${(() => {
+      const allTodos = [...S.todos.values()].flat().filter(t => t.due_date);
+      const filteredTodos = !q ? allTodos : allTodos.filter(t => {
+        const c = courseById(t.course_id);
+        return t.content.toLowerCase().includes(q) || (c?.name || "").toLowerCase().includes(q);
+      });
+      return S.view === "month"  ? renderMonth(filteredExams, filteredTodos)
+          : S.view === "week"   ? renderWeek(filteredExams, filteredTodos)
+          :                       renderAgenda(filteredExams, filteredTodos);
+    })()}`;
 
   $("#nav-prev").addEventListener("click", () => { shiftView(-1); renderMain(); });
   $("#nav-next").addEventListener("click", () => { shiftView(+1); renderMain(); });
@@ -846,11 +856,15 @@ function monthMatrix(viewDate) {
   return rows;
 }
 
-function renderMonth(exams) {
+function renderMonth(exams, todos = []) {
   const byDate = new Map();
   exams.forEach(e => {
     if (!byDate.has(e.date)) byDate.set(e.date, []);
-    byDate.get(e.date).push(e);
+    byDate.get(e.date).push({ ...e, _type: "exam" });
+  });
+  todos.forEach(t => {
+    if (!byDate.has(t.due_date)) byDate.set(t.due_date, []);
+    byDate.get(t.due_date).push({ ...t, _type: "todo" });
   });
   const todayD = today();
   const cells = monthMatrix(S.viewDate).flat().map(day => {
@@ -863,14 +877,16 @@ function renderMonth(exams) {
     const extra = list.length - shown.length;
     return `
       <button class="cal-day ${outside ? "outside" : ""} ${isToday ? "today" : ""} ${isWknd ? "weekend" : ""}"
-              data-day="${k}" aria-label="${WEEKDAYS[day.getDay()]}, ${MONTHS[day.getMonth()]} ${day.getDate()}${list.length ? `, ${list.length} exam${list.length > 1 ? "s" : ""}` : ""}">
+              data-day="${k}" aria-label="${WEEKDAYS[day.getDay()]}, ${MONTHS[day.getMonth()]} ${day.getDate()}${list.length ? `, ${list.length} item${list.length > 1 ? "s" : ""}` : ""}">
         <span class="daynum">${day.getDate()}</span>
         <div class="events">
           ${shown.map(ev => {
             const c = courseById(ev.course_id);
-            return `<span class="event-chip" data-c="${colorFor(ev.course_id)}" title="${escapeHtml((c?.name || "") + " · " + ev.name)}">
-              <span class="ic">${SVG.capSm}</span>
-              <span class="label">${escapeHtml(ev.name)}</span>
+            const label = ev._type === "todo" ? ev.content : ev.name;
+            const icon  = ev._type === "todo" ? SVG.check : SVG.capSm;
+            return `<span class="event-chip" data-c="${colorFor(ev.course_id)}" title="${escapeHtml((c?.name || "") + " · " + label)}">
+              <span class="ic">${icon}</span>
+              <span class="label">${escapeHtml(label)}</span>
             </span>`;
           }).join("")}
           ${extra > 0 ? `<span class="more-link">+${extra} more</span>` : ""}
@@ -1239,11 +1255,10 @@ function openComposer({ kind = "todo", courseId = null, date = null } = {}) {
                     </button>`).join("")}
                 </div>
               </div>
-              ${form.kind === "exam" ? `
-                <div class="field">
-                  <label for="cmp-date">Exam date</label>
-                  <input id="cmp-date" type="date" value="${escapeHtml(form.date)}" />
-                </div>` : ""}
+              <div class="field">
+                <label for="cmp-date">${form.kind === "exam" ? "Exam date" : "Due date (optional)"}</label>
+                <input id="cmp-date" type="date" value="${escapeHtml(form.date)}" />
+              </div>
             </div>
           </div>
           <div class="modal-foot">
@@ -1286,7 +1301,7 @@ function openComposer({ kind = "todo", courseId = null, date = null } = {}) {
     form.busy = true; paint();
     try {
       if (form.kind === "todo") {
-        await api.todos.create(form.courseId, form.title.trim());
+        await api.todos.create(form.courseId, form.title.trim(), form.date || null);      
       } else {
         await api.exams.create(form.courseId, form.title.trim(), form.date);
       }
