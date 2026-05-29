@@ -409,13 +409,17 @@ function renderHeader() {
     if (btn) btn.innerHTML = S.sidebarOpen ? SVG.x : SVG.menu;
   });
 
-  // Close sidebar when clicking outside (registered only once)
+  // Close sidebar when clicking outside (registered only once).
+  // Uses composedPath() because the click handler replaces #btn-sidebar's innerHTML,
+  // detaching the original SVG target — closest() returns null on detached nodes.
   if (!window._sidebarOutsideListener) {
     window._sidebarOutsideListener = true;
     document.addEventListener("click", (e) => {
-      if (S.sidebarOpen
-          && !e.target.closest("#sidebar")
-          && !e.target.closest("#btn-sidebar")) {
+      if (!S.sidebarOpen) return;
+      const path = e.composedPath();
+      const hitBtn      = path.some(el => el && el.id === "btn-sidebar");
+      const hitSidebar  = path.some(el => el && el.id === "sidebar");
+      if (!hitBtn && !hitSidebar) {
         S.sidebarOpen = false;
         $("#sidebar")?.classList.remove("open");
         const btn = $("#btn-sidebar");
@@ -1088,7 +1092,10 @@ function openDayDrawer(date) {
                 </div>`;
             }).join("")
         }
-        <div class="drawer-sec-title" style="margin-top:18px"><span>Tasks</span></div>
+        <div class="drawer-sec-title" style="margin-top:18px">
+          <span>Tasks</span>
+          <button class="link" id="add-task-here">+ Task</button>
+        </div>
         ${taskList.length === 0
           ? `<div class="drawer-empty">No tasks on this day.</div>`
           : taskList.map(t => {
@@ -1114,6 +1121,10 @@ function openDayDrawer(date) {
   $("#add-exam-here").addEventListener("click", () => {
     closeDrawer();
     openComposer({ kind: "exam", date: iso(date) });
+  });
+  $("#add-task-here").addEventListener("click", () => {
+    closeDrawer();
+    openComposer({ kind: "todo", date: iso(date) });
   });
 }
 
