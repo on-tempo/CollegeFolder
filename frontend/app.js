@@ -163,12 +163,13 @@ const api = {
   courses: {
     list:   (sid)         => apiFetch(`/semesters/${sid}/courses`),
     create: (sid, name)   => apiFetch(`/semesters/${sid}/courses`, { method: "POST", body: JSON.stringify({ name }) }),
+    update: (id, data)    => apiFetch(`/semesters/courses/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
     remove: (id)          => apiFetch(`/semesters/courses/${id}`, { method: "DELETE" }),
   },
   todos: {
     list:   (cid)               => apiFetch(`/courses/${cid}/todos`),
     create: (cid, content, due_date = null) => apiFetch(`/courses/${cid}/todos`, { method: "POST", body: JSON.stringify({ content, due_date }) }),
-    update: (cid, tid, isDone)  => apiFetch(`/courses/${cid}/todos/${tid}`, { method: "PATCH", body: JSON.stringify({ is_done: isDone }) }),
+    update: (cid, tid, isDone, due_date = null) => apiFetch(`/courses/${cid}/todos/${tid}`, { method: "PATCH", body: JSON.stringify({ is_done: isDone, due_date: due_date ?? null }) }),
     remove: (cid, tid)          => apiFetch(`/courses/${cid}/todos/${tid}`, { method: "DELETE" }),
   },
   exams: {
@@ -497,7 +498,9 @@ function renderSettingsMenu() {
     });
   });
   $("#set-logout", m).addEventListener("click", () => {
-    closeSettingsMenu();
+    S.menuOpen = false;
+    renderSettingsMenu();
+    cleanupMenu();
     handleLogout();
   });
 
@@ -684,8 +687,14 @@ function wireSemPopover() {
     b.addEventListener("click", async (e) => {
       e.stopPropagation();
       const id = parseInt(b.dataset.delSem, 10);
-      const semCourses = S.courses.length;
-      const semTasks = [...S.todos.values()].flat().length;
+      // Count courses/tasks for the specific semester being deleted (may differ from active semester)
+      let semCourses = 0, semTasks = 0;
+      try {
+        const cs = await api.courses.list(id);
+        semCourses = cs.length;
+        const tCounts = await Promise.all(cs.map(c => api.todos.list(c.id).then(ts => ts.length).catch(() => 0)));
+        semTasks = tCounts.reduce((a, b) => a + b, 0);
+      } catch {}
       if (!confirm(`Delete this semester? This will also delete ${semCourses} course${semCourses !== 1 ? "s" : ""} and ${semTasks} task${semTasks !== 1 ? "s" : ""}.`)) return;
       try {
         await api.semesters.remove(id);
@@ -836,6 +845,24 @@ function renderMain() {
       if (!confirm("Delete this exam?")) return;
       try { await api.exams.remove(id); await loadSemesterData(); update(); toast("Exam deleted", "success"); }
       catch (e) { toast(e.message, "error"); }
+    });
+  });
+
+  // Agenda task toggle (buttons are in #main, not #drawer-root)
+  $$("[data-toggle-todo]", main).forEach(b => {
+    b.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      const id = parseInt(b.dataset.toggleTodo, 10);
+      const courseId = parseInt(b.dataset.todoCourse, 10);
+      if (!courseId) return;
+      const todos = S.todos.get(courseId) || [];
+      const t = todos.find(x => x.id === id);
+      if (!t) return;
+      try {
+        await api.todos.update(courseId, id, !t.is_done, t.due_date ?? null);
+        await loadSemesterData();
+        update();
+      } catch (e) { toast(e.message, "error"); }
     });
   });
 
@@ -1018,6 +1045,7 @@ function renderAgenda(exams, todos = []) {
 // =========================================================
 function openDayDrawer(date) {
   closeDrawer();
+  _openDayDrawerDate = date;
   const root = $("#drawer-root");
   const k = iso(date);
   const examList = S.exams.filter(e => e.date === k);
@@ -1224,11 +1252,12 @@ function wireDrawerCommon() {
       const t = todos.find(x => x.id === id);
       if (!t) return;
       try {
-        await api.todos.update(drawerCourseId, id, !t.is_done);
+        await api.todos.update(drawerCourseId, id, !t.is_done, t.due_date ?? null);
         await loadSemesterData();
         // If this is a day drawer (not course drawer), just re-open the same day
         if (b.dataset.todoCourse) {
           update();
+          if (_openDayDrawerDate) openDayDrawer(_openDayDrawerDate);
         } else {
           openCourseDrawer(drawerCourseId);
           update();
@@ -1255,8 +1284,10 @@ function wireDrawerCommon() {
 // Tracks which course drawer is currently open so todo handlers know their scope
 let _openCourseDrawerId = null;
 function findOpenCourseDrawerId() { return _openCourseDrawerId; }
+let _openDayDrawerDate = null;
 
 function closeDrawer() {
+  _openDayDrawerDate = null;
   $("#drawer-root").innerHTML = "";
   _openCourseDrawerId = null;
 }
@@ -1340,6 +1371,7 @@ function openComposer({ kind = "todo", courseId = null, date = null } = {}) {
     $$("[data-cmp-course]", m).forEach(b => b.addEventListener("click", () => { form.courseId = parseInt(b.dataset.cmpCourse, 10); paint(); $("#cmp-title").focus(); }));
     const title = $("#cmp-title", m);
     title.addEventListener("input", e => form.title = e.target.value);
+    title.addEventListener("keydown", e => { if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { e.preventDefault(); save(); } });
     const dateEl = $("#cmp-date", m);
     if (dateEl) dateEl.addEventListener("input", e => form.date = e.target.value);
     $("#cmp-save", m).addEventListener("click", save);
