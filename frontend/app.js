@@ -47,7 +47,12 @@ function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x
 function daysBetween(later, earlier) {
   return Math.floor((startOfDay(later) - startOfDay(earlier)) / 86400000);
 }
-function colorFor(id) { return `c${((Math.abs(Number(id) || 1) - 1) % 8) + 1}`; }
+const COLOR_NAMES = ["c1","c2","c3","c4","c5","c6","c7","c8"];
+function colorFor(id) {
+  const c = S.courses.find(x => x.id === id);
+  if (c?.color) return c.color;
+  return `c${((Math.abs(Number(id) || 1) - 1) % 8) + 1}`;
+}
 function courseById(id) { return S.courses.find(c => c.id === id); }
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
@@ -71,6 +76,7 @@ const SVG = {
   cap:      `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5a6 6 0 0012 0v-5"/></svg>`,
   capSm:    `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10L12 5 2 10l10 5 10-5zM6 12v5a6 6 0 0012 0v-5"/></svg>`,
   menu:     `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>`,
+  cog:      `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>`,
   sun:      `<svg class="sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>`,
   moon:     `<svg class="moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>`,
   layout:   `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>`,
@@ -161,11 +167,8 @@ const api = {
   },
   todos: {
     list:   (cid)               => apiFetch(`/courses/${cid}/todos`),
-    create: (cid, content, due_date = null) => apiFetch(`/courses/${cid}/todos`, {
-      method: "POST",
-      body: JSON.stringify({ content, due_date })
-    }),
-    update: (cid, tid, isDone, due_date = null)  => apiFetch(`/courses/${cid}/todos/${tid}`, { method: "PATCH", body: JSON.stringify({ is_done: isDone, due_date }) }),
+    create: (cid, content, due_date = null) => apiFetch(`/courses/${cid}/todos`, { method: "POST", body: JSON.stringify({ content, due_date }) }),
+    update: (cid, tid, isDone)  => apiFetch(`/courses/${cid}/todos/${tid}`, { method: "PATCH", body: JSON.stringify({ is_done: isDone }) }),
     remove: (cid, tid)          => apiFetch(`/courses/${cid}/todos/${tid}`, { method: "DELETE" }),
   },
   exams: {
@@ -396,14 +399,14 @@ function renderHeader() {
     </label>
     <button class="btn btn-primary" id="btn-add">${SVG.plus} Add <kbd>N</kbd></button>
     <button class="theme-toggle" id="btn-theme" aria-label="Toggle theme">${SVG.sun}${SVG.moon}</button>
-    <button class="menu-trigger" id="btn-menu" aria-haspopup="true" aria-expanded="${S.menuOpen}" aria-label="Settings">${SVG.menu}</button>`;
+    <button class="menu-trigger" id="btn-menu" aria-haspopup="true" aria-expanded="${S.menuOpen}" aria-label="Settings">${SVG.cog}</button>`;
 
   $("#btn-sidebar").addEventListener("click", () => {
     S.sidebarOpen = !S.sidebarOpen;
     $("#sidebar").classList.toggle("open", S.sidebarOpen);
   });
 
-  // Close sidebar when clicking outside of it (registered only once)
+  // Close sidebar when clicking outside (registered only once)
   if (!window._sidebarOutsideListener) {
     window._sidebarOutsideListener = true;
     document.addEventListener("click", (e) => {
@@ -539,6 +542,7 @@ function renderSidebar() {
     <div class="sb-brand">
       <div class="sb-brand-mark">${LOGO(20)}</div>
       <div class="sb-brand-name">CollegeFolder</div>
+      <button class="btn-icon" id="btn-close-sidebar" aria-label="Close menu">${SVG.x}</button>
     </div>
     <div class="sb-scroll">
       <div style="position:relative">
@@ -602,6 +606,10 @@ function renderSidebar() {
     </div>`;
 
   // Event wiring
+  $("#btn-close-sidebar")?.addEventListener("click", () => {
+    S.sidebarOpen = false;
+    $("#sidebar").classList.remove("open");
+  });
   $("#sem-toggle").addEventListener("click", (e) => {
     e.stopPropagation();
     S.semPickerOpen = !S.semPickerOpen;
@@ -676,7 +684,9 @@ function wireSemPopover() {
     b.addEventListener("click", async (e) => {
       e.stopPropagation();
       const id = parseInt(b.dataset.delSem, 10);
-      if (!confirm("Delete this semester and everything in it?")) return;
+      const semCourses = S.courses.length;
+      const semTasks = [...S.todos.values()].flat().length;
+      if (!confirm(`Delete this semester? This will also delete ${semCourses} course${semCourses !== 1 ? "s" : ""} and ${semTasks} task${semTasks !== 1 ? "s" : ""}.`)) return;
       try {
         await api.semesters.remove(id);
         if (S.currentSemesterId === id) {
@@ -798,8 +808,8 @@ function renderMain() {
         return t.content.toLowerCase().includes(q) || (c?.name || "").toLowerCase().includes(q);
       });
       return S.view === "month"  ? renderMonth(filteredExams, filteredTodos)
-          : S.view === "week"   ? renderWeek(filteredExams, filteredTodos)
-          :                       renderAgenda(filteredExams, filteredTodos);
+           : S.view === "week"   ? renderWeek(filteredExams, filteredTodos)
+           :                       renderAgenda(filteredExams, filteredTodos);
     })()}`;
 
   $("#nav-prev").addEventListener("click", () => { shiftView(-1); renderMain(); });
@@ -877,7 +887,7 @@ function renderMonth(exams, todos = []) {
     const extra = list.length - shown.length;
     return `
       <button class="cal-day ${outside ? "outside" : ""} ${isToday ? "today" : ""} ${isWknd ? "weekend" : ""}"
-              data-day="${k}" aria-label="${WEEKDAYS[day.getDay()]}, ${MONTHS[day.getMonth()]} ${day.getDate()}${list.length ? `, ${list.length} item${list.length > 1 ? "s" : ""}` : ""}">
+              data-day="${k}" aria-label="${WEEKDAYS[day.getDay()]}, ${MONTHS[day.getMonth()]} ${day.getDate()}${list.length ? `, ${list.length} exam${list.length > 1 ? "s" : ""}` : ""}">
         <span class="daynum">${day.getDate()}</span>
         <div class="events">
           ${shown.map(ev => {
@@ -904,12 +914,13 @@ function renderMonth(exams, todos = []) {
 }
 
 // ----- Week grid -----
-function renderWeek(exams) {
+function renderWeek(exams, todos = []) {
   const start = new Date(S.viewDate);
   start.setDate(start.getDate() - start.getDay());
   const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(start); d.setDate(start.getDate() + i); return d; });
   const byDate = new Map();
-  exams.forEach(e => { if (!byDate.has(e.date)) byDate.set(e.date, []); byDate.get(e.date).push(e); });
+  exams.forEach(e => { if (!byDate.has(e.date)) byDate.set(e.date, []); byDate.get(e.date).push({ ...e, _type: "exam" }); });
+  todos.forEach(t => { if (!byDate.has(t.due_date)) byDate.set(t.due_date, []); byDate.get(t.due_date).push({ ...t, _type: "todo" }); });
   const todayD = today();
 
   const cells = days.map(day => {
@@ -925,9 +936,11 @@ function renderWeek(exams) {
             ? `<span style="font-size:12px;color:var(--ink-mute);font-style:italic;padding:4px 0">Nothing due</span>`
             : list.map(ev => {
                 const c = courseById(ev.course_id);
-                return `<span class="event-chip" data-c="${colorFor(ev.course_id)}" style="padding:6px 8px; font-size:13px" title="${escapeHtml((c?.name || "") + " · " + ev.name)}">
-                  <span class="ic">${SVG.capSm}</span>
-                  <span class="label">${escapeHtml(ev.name)}</span>
+                const wLabel = ev._type === "todo" ? ev.content : ev.name;
+                const wIcon  = ev._type === "todo" ? SVG.check : SVG.capSm;
+                return `<span class="event-chip" data-c="${colorFor(ev.course_id)}" style="padding:6px 8px; font-size:13px" title="${escapeHtml((c?.name || "") + " · " + wLabel)}">
+                  <span class="ic">${wIcon}</span>
+                  <span class="label">${escapeHtml(wLabel)}</span>
                 </span>`;
               }).join("")
           }
@@ -945,16 +958,20 @@ function renderWeek(exams) {
 }
 
 // ----- Agenda view -----
-function renderAgenda(exams) {
-  if (exams.length === 0) {
+function renderAgenda(exams, todos = []) {
+  const allItems = [
+    ...exams.map(e => ({ ...e, _type: "exam", _sortDate: e.date })),
+    ...todos.map(t => ({ ...t, _type: "todo", _sortDate: t.due_date }))
+  ];
+  if (allItems.length === 0) {
     return `<div class="empty-state">
       <h2>Nothing scheduled.</h2>
       <p>Press N to add an exam.</p>
     </div>`;
   }
-  const sorted = [...exams].sort((a, b) => a.date.localeCompare(b.date));
+  const sorted = allItems.sort((a, b) => a._sortDate.localeCompare(b._sortDate));
   const groups = new Map();
-  sorted.forEach(e => { if (!groups.has(e.date)) groups.set(e.date, []); groups.get(e.date).push(e); });
+  sorted.forEach(e => { if (!groups.has(e._sortDate)) groups.set(e._sortDate, []); groups.get(e._sortDate).push(e); });
   const todayD = today();
   const html = Array.from(groups.entries()).map(([dateStr, items]) => {
     const dt = new Date(dateStr + "T12:00:00");
@@ -970,20 +987,24 @@ function renderAgenda(exams) {
         </div>
         ${items.map(ev => {
           const c = courseById(ev.course_id);
+          const aLabel = ev._type === "todo" ? ev.content : ev.name;
+          const aIcon  = ev._type === "todo" ? SVG.check : SVG.capSm;
+          const aTag   = ev._type === "todo" ? `<span class="kind-tag">Task</span>` : `<span class="kind-tag exam">Exam</span>`;
+          const aDelete = ev._type === "exam" ? `<button class="btn-icon" data-del-exam="${ev.id}" aria-label="Delete">${SVG.trash}</button>` : "";
           return `
-            <div class="agenda-row" data-kind="exam">
-              <button class="check" aria-label="${escapeHtml(ev.name)}">${SVG.capSm}</button>
+            <div class="agenda-row" data-kind="${ev._type}">
+              <button class="check" aria-label="${escapeHtml(aLabel)}">${aIcon}</button>
               <div class="content">
-                <span class="title">${escapeHtml(ev.name)}</span>
+                <span class="title" style="${ev._type === "todo" && ev.is_done ? "text-decoration:line-through;opacity:.5" : ""}">${escapeHtml(aLabel)}</span>
                 <div class="meta">
                   <span class="pill" data-c="${colorFor(ev.course_id)}">
                     <span class="pdot" style="background:var(--${colorFor(ev.course_id)}-dot)"></span>
                     ${escapeHtml(c?.name || "—")}
                   </span>
-                  <span class="kind-tag exam">Exam</span>
+                  ${aTag}
                 </div>
               </div>
-              <button class="btn-icon" data-del-exam="${ev.id}" aria-label="Delete">${SVG.trash}</button>
+              ${aDelete}
             </div>`;
         }).join("")}
       </section>`;
@@ -998,7 +1019,8 @@ function openDayDrawer(date) {
   closeDrawer();
   const root = $("#drawer-root");
   const k = iso(date);
-  const list = S.exams.filter(e => e.date === k);
+  const examList = S.exams.filter(e => e.date === k);
+  const taskList = [...S.todos.values()].flat().filter(t => t.due_date === k);
   root.innerHTML = `
     <div class="drawer-backdrop" data-drawer-close></div>
     <aside class="drawer" role="dialog" aria-label="${WEEKDAYS[date.getDay()]}, ${MONTHS[date.getMonth()]} ${date.getDate()}">
@@ -1017,9 +1039,9 @@ function openDayDrawer(date) {
           <span>Exams</span>
           <button class="link" id="add-exam-here">+ Exam</button>
         </div>
-        ${list.length === 0
+        ${examList.length === 0
           ? `<div class="drawer-empty">No exams on this day.</div>`
-          : list.map(ev => {
+          : examList.map(ev => {
               const c = courseById(ev.course_id);
               return `
                 <div class="agenda-row" data-kind="exam" style="margin:0 0 4px">
@@ -1034,6 +1056,26 @@ function openDayDrawer(date) {
                     </div>
                   </div>
                   <button class="btn-icon" data-del-exam="${ev.id}" aria-label="Delete">${SVG.trash}</button>
+                </div>`;
+            }).join("")
+        }
+        <div class="drawer-sec-title" style="margin-top:18px"><span>Tasks</span></div>
+        ${taskList.length === 0
+          ? `<div class="drawer-empty">No tasks on this day.</div>`
+          : taskList.map(t => {
+              const c = courseById(t.course_id);
+              return `
+                <div class="agenda-row" data-kind="todo" style="margin:0 0 4px">
+                  <button class="check" aria-pressed="${t.is_done}" aria-label="${escapeHtml(t.content)}">${t.is_done ? SVG.check : ""}</button>
+                  <div class="content">
+                    <span class="title" style="${t.is_done ? "text-decoration:line-through;opacity:.5" : ""}">${escapeHtml(t.content)}</span>
+                    <div class="meta">
+                      <span class="pill" data-c="${colorFor(t.course_id)}">
+                        <span class="pdot" style="background:var(--${colorFor(t.course_id)}-dot)"></span>
+                        ${escapeHtml(c?.name || "—")}
+                      </span>
+                    </div>
+                  </div>
                 </div>`;
             }).join("")
         }
@@ -1066,12 +1108,22 @@ function openCourseDrawer(courseId) {
           <div class="swatch" style="background:var(--${colorFor(c.id)}-bg);color:var(--${colorFor(c.id)}-fg)">${SVG.cap}</div>
           <div class="info">
             <span class="code">${escapeHtml(c.name)}</span>
-            <span class="meta">${todos.length} task${todos.length === 1 ? "" : "s"}${courseExams.length ? ` · ${courseExams.length} exam${courseExams.length === 1 ? "" : "s"}` : ""}</span>
+            <span class="meta">${todos.length} task${todos.length === 1 ? "" : "s"}</span>
           </div>
         </div>
         <button class="btn-icon" data-drawer-close aria-label="Close">${SVG.x}</button>
       </div>
       <div class="drawer-body">
+        <div class="drawer-sec-title"><span>Color</span></div>
+        <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+          ${COLOR_NAMES.map(col => `
+            <button data-pick-color="${col}" style="
+              width:24px;height:24px;border-radius:50%;
+              background:var(--${col}-dot);
+              border:3px solid ${c.color === col ? "var(--ink-1)" : "transparent"};
+              cursor:pointer;padding:0"
+              aria-label="${col}"></button>`).join("")}
+        </div>
         <div class="drawer-sec-title"><span>Tasks</span></div>
         <div class="drawer-quick-add">
           <input id="quick-todo" type="text" placeholder="Add a task…" />
@@ -1079,22 +1131,6 @@ function openCourseDrawer(courseId) {
         </div>
         <div id="todo-list">${renderTodos(c.id, todos)}</div>
 
-        <div class="drawer-sec-title" style="margin-top:18px">
-          <span>Exams</span>
-          <button class="link" id="add-exam-for-course">+ Exam</button>
-        </div>
-        ${courseExams.length === 0
-          ? `<div class="drawer-empty">No exams.</div>`
-          : courseExams.map(ev => `
-              <div class="agenda-row" data-kind="exam" style="margin:0 0 4px">
-                <button class="check" aria-label="${escapeHtml(ev.name)}">${SVG.capSm}</button>
-                <div class="content">
-                  <span class="title">${escapeHtml(ev.name)}</span>
-                  <div class="meta"><span class="kind-tag">${ev.date}</span></div>
-                </div>
-                <button class="btn-icon" data-del-exam="${ev.id}" aria-label="Delete">${SVG.trash}</button>
-              </div>`).join("")
-        }
 
         <div style="margin-top:28px; padding:0 10px">
           <button class="btn btn-danger" id="del-course" style="width:100%; justify-content:center">
@@ -1108,6 +1144,19 @@ function openCourseDrawer(courseId) {
   const input = $("#quick-todo");
   const addBtn = $("#quick-todo-add");
   input.focus();
+
+  $$("[data-pick-color]", root).forEach(btn => {
+    btn.addEventListener("click", async () => {
+      const col = btn.dataset.pickColor;
+      try {
+        await api.courses.update(c.id, { color: col });
+        await loadSemesterData();
+        openCourseDrawer(c.id);
+        update();
+      } catch (e) { toast(e.message, "error"); }
+    });
+  });
+
   const submit = async () => {
     const v = input.value.trim();
     if (!v) return;
@@ -1123,11 +1172,6 @@ function openCourseDrawer(courseId) {
   };
   addBtn.addEventListener("click", submit);
   input.addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); submit(); } });
-
-  $("#add-exam-for-course").addEventListener("click", () => {
-    closeDrawer();
-    openComposer({ kind: "exam", courseId: c.id });
-  });
 
   $("#del-course").addEventListener("click", async () => {
     if (!confirm("Delete this course and everything in it?")) return;
@@ -1301,7 +1345,7 @@ function openComposer({ kind = "todo", courseId = null, date = null } = {}) {
     form.busy = true; paint();
     try {
       if (form.kind === "todo") {
-        await api.todos.create(form.courseId, form.title.trim(), form.date || null);      
+        await api.todos.create(form.courseId, form.title.trim(), form.date || null);
       } else {
         await api.exams.create(form.courseId, form.title.trim(), form.date);
       }
