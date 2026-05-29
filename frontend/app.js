@@ -387,7 +387,7 @@ function renderHeader() {
   if (!h) return;
   const sem = S.semesters.find(s => s.id === S.currentSemesterId);
   h.innerHTML = `
-    <button class="hamburger" id="btn-sidebar" aria-label="Open menu">${SVG.menu}</button>
+    <button class="hamburger" id="btn-sidebar" aria-label="${S.sidebarOpen ? 'Close menu' : 'Open menu'}">${S.sidebarOpen ? SVG.x : SVG.menu}</button>
     <div class="header-title">
       ${escapeHtml(sem ? sem.name : "CollegeFolder")}
       <small>Plan your semester</small>
@@ -404,6 +404,8 @@ function renderHeader() {
   $("#btn-sidebar").addEventListener("click", () => {
     S.sidebarOpen = !S.sidebarOpen;
     $("#sidebar").classList.toggle("open", S.sidebarOpen);
+    const btn = $("#btn-sidebar");
+    if (btn) btn.innerHTML = S.sidebarOpen ? SVG.x : SVG.menu;
   });
 
   // Close sidebar when clicking outside (registered only once)
@@ -415,6 +417,8 @@ function renderHeader() {
           && !e.target.closest("#btn-sidebar")) {
         S.sidebarOpen = false;
         $("#sidebar")?.classList.remove("open");
+        const btn = $("#btn-sidebar");
+        if (btn) btn.innerHTML = SVG.menu;
       }
     });
   }
@@ -493,7 +497,7 @@ function renderSettingsMenu() {
     });
   });
   $("#set-logout", m).addEventListener("click", () => {
-    S.menuOpen = false;
+    closeSettingsMenu();
     handleLogout();
   });
 
@@ -542,7 +546,7 @@ function renderSidebar() {
     <div class="sb-brand">
       <div class="sb-brand-mark">${LOGO(20)}</div>
       <div class="sb-brand-name">CollegeFolder</div>
-      <button class="btn-icon" id="btn-close-sidebar" aria-label="Close menu">${SVG.x}</button>
+
     </div>
     <div class="sb-scroll">
       <div style="position:relative">
@@ -606,10 +610,6 @@ function renderSidebar() {
     </div>`;
 
   // Event wiring
-  $("#btn-close-sidebar")?.addEventListener("click", () => {
-    S.sidebarOpen = false;
-    $("#sidebar").classList.remove("open");
-  });
   $("#sem-toggle").addEventListener("click", (e) => {
     e.stopPropagation();
     S.semPickerOpen = !S.semPickerOpen;
@@ -991,9 +991,10 @@ function renderAgenda(exams, todos = []) {
           const aIcon  = ev._type === "todo" ? SVG.check : SVG.capSm;
           const aTag   = ev._type === "todo" ? `<span class="kind-tag">Task</span>` : `<span class="kind-tag exam">Exam</span>`;
           const aDelete = ev._type === "exam" ? `<button class="btn-icon" data-del-exam="${ev.id}" aria-label="Delete">${SVG.trash}</button>` : "";
+          const aCheckAttr = ev._type === "todo" ? `data-toggle-todo="${ev.id}" data-todo-course="${ev.course_id}" aria-pressed="${ev.is_done}"` : "";
           return `
             <div class="agenda-row" data-kind="${ev._type}">
-              <button class="check" aria-label="${escapeHtml(aLabel)}">${aIcon}</button>
+              <button class="check" ${aCheckAttr} aria-label="${escapeHtml(aLabel)}">${ev._type === "todo" && ev.is_done ? SVG.check : ev._type !== "todo" ? aIcon : ""}</button>
               <div class="content">
                 <span class="title" style="${ev._type === "todo" && ev.is_done ? "text-decoration:line-through;opacity:.5" : ""}">${escapeHtml(aLabel)}</span>
                 <div class="meta">
@@ -1066,7 +1067,7 @@ function openDayDrawer(date) {
               const c = courseById(t.course_id);
               return `
                 <div class="agenda-row" data-kind="todo" style="margin:0 0 4px">
-                  <button class="check" aria-pressed="${t.is_done}" aria-label="${escapeHtml(t.content)}">${t.is_done ? SVG.check : ""}</button>
+                  <button class="check" data-toggle-todo="${t.id}" data-todo-course="${t.course_id}" aria-pressed="${t.is_done}" aria-label="${escapeHtml(t.content)}">${t.is_done ? SVG.check : ""}</button>
                   <div class="content">
                     <span class="title" style="${t.is_done ? "text-decoration:line-through;opacity:.5" : ""}">${escapeHtml(t.content)}</span>
                     <div class="meta">
@@ -1214,7 +1215,10 @@ function wireDrawerCommon() {
   $$("[data-toggle-todo]", $("#drawer-root")).forEach(b => {
     b.addEventListener("click", async () => {
       const id = parseInt(b.dataset.toggleTodo, 10);
-      const drawerCourseId = findOpenCourseDrawerId();
+      // data-todo-course is set on day-drawer tasks; fall back to open course drawer
+      const drawerCourseId = b.dataset.todoCourse
+        ? parseInt(b.dataset.todoCourse, 10)
+        : findOpenCourseDrawerId();
       if (!drawerCourseId) return;
       const todos = S.todos.get(drawerCourseId) || [];
       const t = todos.find(x => x.id === id);
@@ -1222,8 +1226,13 @@ function wireDrawerCommon() {
       try {
         await api.todos.update(drawerCourseId, id, !t.is_done);
         await loadSemesterData();
-        openCourseDrawer(drawerCourseId);
-        update();
+        // If this is a day drawer (not course drawer), just re-open the same day
+        if (b.dataset.todoCourse) {
+          update();
+        } else {
+          openCourseDrawer(drawerCourseId);
+          update();
+        }
       } catch (e) { toast(e.message, "error"); }
     });
   });
