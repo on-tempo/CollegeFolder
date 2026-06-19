@@ -1,5 +1,3 @@
-<div align="center">
-
 # 📁 CollegeFolder
 
 **A semester planner for students — organize semesters, courses, exams, and todos in a calendar built around a college schedule.**
@@ -11,8 +9,6 @@
 [![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
 
 [Live demo](https://collegefolder-frontend.onrender.com) · [API docs](#api-endpoints)
-
-</div>
 
 ---
 
