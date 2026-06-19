@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from database import get_db
-from models import Course, Semester
+from models import Course
 from schemas import CourseCreate, CourseUpdate, CourseResponse
 from routers.auth import get_current_user
 from deps import get_owned_semester, get_owned_course

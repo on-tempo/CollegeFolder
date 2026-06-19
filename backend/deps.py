@@ -4,11 +4,9 @@
 # it must use these helpers to confirm the resource actually
 # belongs to the currently logged-in user.
 # =========================================================
-from fastapi import Depends, HTTPException
+from fastapi import HTTPException
 from sqlalchemy.orm import Session
-from database import get_db
 from models import Semester, Course, Todo, Exam
-from routers.auth import get_current_user
 
 
 def get_owned_semester(semester_id: int, db: Session, current_user) -> Semester:
