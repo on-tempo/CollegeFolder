@@ -8,6 +8,10 @@ import os
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL")
+# Refuse to start with a clear error if the database URL is missing,
+# instead of failing later with a confusing create_engine(None) error.
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL environment variable is not set")
 
 #Create database engine
 engine = create_engine(DATABASE_URL)
