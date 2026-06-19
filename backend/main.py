@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from database import engine
@@ -9,15 +10,17 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# Allow frontend to talk to backend
+# CORS: manage allowed frontend origins via an environment variable.
+# If a comma-separated ALLOWED_ORIGINS is set, use it; otherwise fall back to local dev defaults.
+_origins_env = os.getenv("ALLOWED_ORIGINS")
+if _origins_env:
+    allowed_origins = [o.strip() for o in _origins_env.split(",") if o.strip()]
+else:
+    allowed_origins = ["http://localhost:3000", "http://127.0.0.1:5500"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:5500",
-        "https://collegefolder.netlify.app",
-        "https://collegefolder-frontend.onrender.com"
-    ],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -1,27 +1,29 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field
 from datetime import date, datetime
 
 # Data shape for register request
 class UserCreate(BaseModel):
-    email: str
-    password: str
+    # EmailStr automatically returns 422 if the value is not a valid email
+    email: EmailStr
+    # Password length limit. bcrypt only processes up to 72 bytes, so cap at 72.
+    password: str = Field(min_length=8, max_length=72)
 
 # Data shape for login request
 class UserLogin(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 # Data shape for user response (never return password)
 class UserResponse(BaseModel):
     id: int
-    email: str
+    email: EmailStr
 
     class Config:
         from_attributes = True
 
 # Semester schemas
 class SemesterCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=100)
 
 class SemesterResponse(BaseModel):
     id: int
@@ -33,7 +35,7 @@ class SemesterResponse(BaseModel):
 
 # Course schemas
 class CourseCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=100)
     color: str | None = None
 
 class CourseUpdate(BaseModel):
@@ -50,7 +52,7 @@ class CourseResponse(BaseModel):
 
 # Todo schemas
 class TodoCreate(BaseModel):
-    content: str
+    content: str = Field(min_length=1, max_length=500)
     due_date: date | None = None
 
 class TodoUpdate(BaseModel):
@@ -70,7 +72,7 @@ class TodoResponse(BaseModel):
 
 # Exam schemas
 class ExamCreate(BaseModel):
-    name: str
+    name: str = Field(min_length=1, max_length=100)
     date: date
 
 class ExamResponse(BaseModel):

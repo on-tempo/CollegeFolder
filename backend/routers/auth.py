@@ -1,21 +1,26 @@
+import os
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from jose import jwt, JWTError
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from database import get_db
 from models import User
 from schemas import UserCreate, UserLogin, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
-#JWT settings
-SECRET_KEY = "collegefolderkey123"
+# JWT settings
+# Never hardcode SECRET_KEY; read it from an environment variable.
+# If it is missing, refuse to start so a weak key is never used by accident.
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY:
+    raise RuntimeError("SECRET_KEY environment variable is not set")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
-#Security
+# Security
 security = HTTPBearer()
 
 def hash_password(password: str):
@@ -25,12 +30,12 @@ def verify_password(plain: str, hashed: str):
     return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
 
 def create_access_token(user_id: int):
-    #Set token expiration time
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    # Set token expiration time (timezone-aware, recommended over utcnow())
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {"sub": str(user_id), "exp": expire}
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-#Get current logged in user from token
+# Get current logged in user from token
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
     try:
         token = credentials.credentials
@@ -44,10 +49,10 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
         raise HTTPException(status_code=401, detail="User not found")
     return user
 
-#Register endpoint
+# Register endpoint
 @router.post("/register", response_model=UserResponse)
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    #Check if email already exists
+    # Check if email already exists
     existing_user = db.query(User).filter(User.email == user.email).first()
     if existing_user:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -62,18 +67,18 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
 
     return new_user
 
-#Login endpoint
+# Login endpoint
 @router.post("/login")
 def login(user: UserLogin, db: Session = Depends(get_db)):
-    #Check if user exists
+    # Check if user exists
     db_user = db.query(User).filter(User.email == user.email).first()
     if not db_user:
         raise HTTPException(status_code=400, detail="Invalid email or password")
 
-    #Check if password is correct
+    # Check if password is correct
     if not verify_password(user.password, db_user.password):
         raise HTTPException(status_code=400, detail="Invalid email or password")
 
-    #Create and return JWT token
+    # Create and return JWT token
     token = create_access_token(db_user.id)
     return {"access_token": token, "token_type": "bearer"}
