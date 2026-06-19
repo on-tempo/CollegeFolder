@@ -3,7 +3,16 @@
 // Vanilla JS. Talks to the FastAPI backend over fetch + JWT.
 // =========================================================
 
-const API = "https://collegefolder-backend.onrender.com";
+// Pick the API base URL based on where the frontend is being served from.
+// Opening the page locally (localhost / 127.0.0.1 / file) talks to the local
+// backend; anywhere else uses the deployed backend.
+const API = (() => {
+  const host = location.hostname;
+  if (host === "localhost" || host === "127.0.0.1" || host === "") {
+    return "http://localhost:8000";
+  }
+  return "https://collegefolder-backend.onrender.com";
+})();
 
 // ----- App state (single source of truth) -----
 const S = {
@@ -95,6 +104,20 @@ const LOGO = (size = 22) => `
 // =========================================================
 // API
 // =========================================================
+// Turn a FastAPI error response body into a readable message.
+// Validation errors (HTTP 422) return detail as an array of objects,
+// while normal errors return detail as a plain string.
+function parseApiError(body, fallback) {
+  if (!body || body.detail == null) return fallback;
+  const d = body.detail;
+  if (typeof d === "string") return d;
+  if (Array.isArray(d) && d.length > 0) {
+    // Use the first validation issue's message (e.g. password length, email format)
+    return d[0].msg || fallback;
+  }
+  return fallback;
+}
+
 async function apiFetch(path, opts = {}) {
   const headers = { "Content-Type": "application/json", ...(opts.headers || {}) };
   if (S.token) headers["Authorization"] = `Bearer ${S.token}`;
@@ -110,7 +133,7 @@ async function apiFetch(path, opts = {}) {
   }
   if (!res.ok) {
     let detail = "Request failed";
-    try { const j = await res.json(); detail = j.detail || detail; } catch {}
+    try { const j = await res.json(); detail = parseApiError(j, detail); } catch {}
     throw new Error(detail);
   }
   if (res.status === 204) return null;
@@ -129,7 +152,7 @@ const api = {
     } catch { throw new Error("Could not reach the server."); }
     if (!res.ok) {
       let detail = "Invalid email or password";
-      try { const j = await res.json(); detail = j.detail || detail; } catch {}
+      try { const j = await res.json(); detail = parseApiError(j, detail); } catch {}
       throw new Error(detail);
     }
     const data = await res.json();
@@ -150,7 +173,7 @@ const api = {
     } catch { throw new Error("Could not reach the server."); }
     if (!res.ok) {
       let detail = "Could not register. Try a different email.";
-      try { const j = await res.json(); detail = j.detail || detail; } catch {}
+      try { const j = await res.json(); detail = parseApiError(j, detail); } catch {}
       throw new Error(detail);
     }
     return await res.json();
@@ -316,7 +339,8 @@ function renderAuth() {
           </div>
           <div class="field">
             <label for="auth-pw">Password</label>
-            <input id="auth-pw" type="password" autocomplete="${isLogin ? "current-password" : "new-password"}" minlength="4" required />
+            <input id="auth-pw" type="password" autocomplete="${isLogin ? "current-password" : "new-password"}" minlength="${isLogin ? 1 : 8}" required />
+            ${isLogin ? "" : `<p class="field-hint">Use at least 8 characters.</p>`}
           </div>
           <button type="submit" class="btn btn-primary" id="auth-submit" style="margin-top:8px">
             ${isLogin ? "Sign in" : "Create account"}
@@ -346,6 +370,11 @@ async function onAuthSubmit(e) {
   msg.innerHTML = "";
   if (!email || !pw) {
     msg.innerHTML = `<div class="form-error">Please enter both email and password.</div>`;
+    return;
+  }
+  // On register, enforce the same minimum length the backend requires (8 chars).
+  if (authMode === "register" && pw.length < 8) {
+    msg.innerHTML = `<div class="form-error">Password must be at least 8 characters.</div>`;
     return;
   }
   btn.disabled = true;
