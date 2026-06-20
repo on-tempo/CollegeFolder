@@ -115,11 +115,38 @@ cd frontend
 
 Then visit `http://127.0.0.1:5500`. The frontend automatically targets the local backend when served from localhost, and the deployed backend otherwise.
 
+## Run with Docker
+
+The entire stack (FastAPI backend + PostgreSQL) runs with a single command using Docker Compose — no local Python or database setup required.
+
+Create a `.env` file in the project root:
+
+```bash
+SECRET_KEY=          # generate: python -c "import secrets; print(secrets.token_hex(32))"
+ALLOWED_ORIGINS=http://localhost:5500,http://127.0.0.1:5500
+```
+
+Then start everything:
+
+```bash
+docker compose up --build
+```
+
+This builds the backend image, starts a PostgreSQL container with a persistent volume, waits for the database to pass its health check, and then launches the API at `http://localhost:8000`. The backend connects to the database over the Compose network (the `DATABASE_URL` is wired automatically), so no database URL is needed in `.env`.
+
+To stop:
+
+```bash
+docker compose down          # stop containers (database data is preserved in a volume)
+```
+
 ## Project structure
 
 ```
 CollegeFolder/
+├── docker-compose.yml     # Orchestrates backend + PostgreSQL
 ├── backend/
+│   ├── Dockerfile         # Backend image definition
 │   ├── main.py            # App entry, router registration, CORS
 │   ├── database.py        # SQLAlchemy engine and session
 │   ├── models.py          # ORM models (User, Semester, Course, Todo, Exam)
