@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from datetime import date, datetime
 
 # Data shape for register request
@@ -18,8 +18,7 @@ class UserResponse(BaseModel):
     id: int
     email: EmailStr
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Semester schemas
 class SemesterCreate(BaseModel):
@@ -30,8 +29,7 @@ class SemesterResponse(BaseModel):
     user_id: int
     name: str
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Course schemas
 class CourseCreate(BaseModel):
@@ -47,8 +45,7 @@ class CourseResponse(BaseModel):
     name: str
     color: str | None = None
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Todo schemas
 class TodoCreate(BaseModel):
@@ -67,8 +64,7 @@ class TodoResponse(BaseModel):
     due_date: date | None = None
     created_at: datetime
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Exam schemas
 class ExamCreate(BaseModel):
@@ -81,5 +77,4 @@ class ExamResponse(BaseModel):
     name: str
     date: date
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
