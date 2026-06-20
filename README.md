@@ -2,6 +2,7 @@
 
 **A semester planner for students — organize semesters, courses, exams, and todos in a calendar built around a college schedule.**
 
+[![CI](https://github.com/on-tempo/CollegeFolder/actions/workflows/ci.yml/badge.svg)](https://github.com/on-tempo/CollegeFolder/actions/workflows/ci.yml)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.137-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
