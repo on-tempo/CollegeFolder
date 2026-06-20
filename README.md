@@ -9,7 +9,7 @@
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-D71F00?logo=sqlalchemy&logoColor=white)](https://www.sqlalchemy.org/)
 [![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens&logoColor=white)](https://jwt.io/)
 
-[Live demo](https://collegefolder-frontend.onrender.com) · [API docs](#api-endpoints)
+[API docs](#api-endpoints)
 
 ---
 
