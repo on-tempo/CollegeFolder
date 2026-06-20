@@ -10,6 +10,13 @@ Each test gets a clean schema: tables are created before the test and dropped
 afterward, so tests never leak state into one another.
 """
 import os
+import sys
+
+# Ensure the backend directory (parent of this tests/ folder) is importable,
+# so `import database`, `import models`, `import main` work regardless of how
+# or from where pytest is invoked.
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
